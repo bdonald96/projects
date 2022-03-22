@@ -1,0 +1,43 @@
+# Brandon Donaldson
+# Exam 1 
+# This program creates a graph of data recorded from the voltage recording program
+# data arrays are improperly named from reusing an old program (activity 9)
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# define data arrays
+temp_data = [] #represents voltage data
+resistance_data = [] #represents time data
+
+# read in the data
+lines = np.loadtxt('9vDataExamEdited.txt', delimiter=',')
+for line in lines:
+    temp_data.append(line[1]) # the first item in row is the time 
+    resistance_data.append(line[0]) # the second item in row is the voltage
+
+# exponential decay function
+def my_func(x,a,b):
+    return a*np.exp(-b*x)
+
+# have to do the following to use the time data in the exponential function
+fit_time_data=np.array(temp_data)
+
+# make a plot
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1)
+
+# make an xy scatter plot
+plt.scatter(resistance_data, temp_data, color='red', label='data') # x-axis values = resistance_data (time), y-axis values = temp_data (voltage)
+
+# add the exponential curve w/ guesses for the constants a and b:
+#plt.plot(fit_time_data,my_func(fit_time_data,3.3,35), color='black', label = 'my fit')
+
+# label the axes etc
+ax.set_xlabel('time')
+ax.set_ylabel('voltage')
+ax.set_title('Energizer EN22 9v Battery Discharge')
+plt.legend(loc = 'upper right') # legend location can be changed
+
+#ax.text(0.4,1.5, 'annotate the plot if needed')
+plt.savefig('9v Data Exam.png')

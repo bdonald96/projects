@@ -1,0 +1,119 @@
+# Brandon Donaldson
+# Exam 1
+# This program will record voltage from a 9v battery as it discharges
+
+import RPi.GPIO as GPIO
+import time
+
+# set ADC0831 pins
+CS = 5
+CLK = 6
+DO = 13
+
+
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(CS,GPIO.OUT)
+GPIO.setup(CLK,GPIO.OUT)
+GPIO.setup(DO,GPIO.IN)
+
+
+# define a function to handle reading ADC0831 data
+def readADC():
+    # set initial binary string as empty
+    d = ''
+    # set the CS pin low (starts the conversation)
+    GPIO.output(CS,False)
+    # one clock pulse
+    # set the CLK pin low
+    GPIO.output(CLK, False)
+    # set the CLK pin high
+    GPIO.output(CLK, True)
+    # set the CLK pin low
+    GPIO.output(CLK, False)
+    # end clock pulse
+    # now to read the data synced to more clock pulses
+    for n in range(0,8): # read in 8 bits, 0-7
+        # one clock pulse
+        # set the CLK pin low
+        GPIO.output(CLK, False)
+        # set the CLK pin high
+        GPIO.output(CLK, True)
+        # set the CLK pin low
+        GPIO.output(CLK, False)
+        # end clock pulse
+        # list to the DO pin for a bit
+        DO_state = GPIO.input(DO)
+        if DO_state == True:
+            d = d + '1'
+        else:
+            d = d + '0'
+        # repeat until all bits read
+    # set the CS pin high (ends conversation)
+    GPIO.output(CS,True)
+    # return the binary data to the user
+    return d
+
+# define a function to return voltage
+def calc_volts(d):
+    # we know voltage is on 0 to 5V scale and
+    # ADC0831 returns binary numbers w/ integer equivalent
+    # values between 0 and 255
+    d_int = int(d,2)
+    # We ASSUME the voltage is exactly 5.0 volts out of the RPi
+    # measure it to be sure and correct value below.
+    volts = (5.02*d_int / 255)* 2.0
+    # but the step size is 5V / 256 steps = 0.01953... or about
+    # 0.02 V V/step. Hence, we need to truncate our voltage value
+    # to only display significant figures!
+    volts = round(volts, 2)
+    return volts
+
+
+
+
+# now for the main event!
+try:
+    # create data arrays
+    time_data = []
+    voltage_data = []
+    
+    # set time for experiment to run
+    run_time = 60*60*15 #setting run time to 15 hours
+    
+    # wait for cap to charge
+    time.sleep(0.5)
+    # set a conditional True
+    my_test = True
+    start_time = time.time()
+    while my_test == True:
+        # append time to time_data
+        time_data.append(time.time()-start_time)
+        # call our function to read a binary data value
+        d = readADC() # this returns the binary data string
+        #print(d)
+        # append our binary data to our array
+        voltage_data.append(d)
+        my_volts = calc_volts(d)
+        print(my_volts, ' volts')
+        # test if enough time has elapsed
+        if time.time() -  start_time > run_time:
+            my_test = False
+        time.sleep(30)
+
+    # open a data file for writing in same directory as the working program
+    file = open('9vDataExam.txt', 'w')
+    for n in range(len(time_data)):
+        my_volts = calc_volts(voltage_data[n])
+        # write the data as comma delimited
+        file.write(str(time_data[n]) + ',' + str(my_volts) + '\n')
+    # always close the file you are using!
+    file.close()
+
+except KeyboardInterrupt:
+    # here you put any code or commands to run before the
+    # program exits when you press CTRL+C
+    print('initiating shutdown sequence....')
+
+finally:
+    GPIO.cleanup() # this ensures a clean exit
